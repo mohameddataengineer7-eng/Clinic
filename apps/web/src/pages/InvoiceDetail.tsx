@@ -265,10 +265,8 @@ export default function InvoiceDetail() {
           window.location.assign(url);
           return;
         }
-        const popup = channel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
-        if (channel === 'sms') window.location.href = url;
-        if (!popup) {
-          showToast({ type: 'error', message: t('invoices.popupBlocked') });
+        if (channel === 'whatsapp' || channel === 'sms') {
+          window.location.assign(url);
           return;
         }
         setMessageShareChannel(null);
@@ -295,7 +293,6 @@ export default function InvoiceDetail() {
       setShareMenuOpen(false);
       setShareActionPending(true);
       setWhatsappOpening(true);
-      const fallbackWindow = window.open('', '_blank', 'noopener,noreferrer');
 
       void (async () => {
         try {
@@ -309,7 +306,6 @@ export default function InvoiceDetail() {
 
           if (shareNavigator.share && canShareInvoiceFile(file)) {
             await shareNavigator.share(shareData);
-            fallbackWindow?.close();
             showToast({ type: 'success', message: t('invoices.invoiceShared') });
             return;
           }
@@ -324,15 +320,10 @@ export default function InvoiceDetail() {
           window.setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 60_000);
 
           const whatsappUrl = buildWhatsAppUrl(phone, message);
-          if (fallbackWindow) {
-            fallbackWindow.location.replace(whatsappUrl);
-            setMessageShareChannel(null);
-            showToast({ type: 'info', message: t('invoices.pdfDownloadedAttachManually') });
-          } else {
-            showToast({ type: 'error', message: t('invoices.popupBlocked') });
-          }
+          setMessageShareChannel(null);
+          showToast({ type: 'info', message: t('invoices.pdfDownloadedAttachManually') });
+          window.location.assign(whatsappUrl);
         } catch (error) {
-          fallbackWindow?.close();
           if (error instanceof globalThis.DOMException && error.name === 'AbortError') {
             showToast({ type: 'info', message: t('invoices.shareCancelled') });
           } else {
