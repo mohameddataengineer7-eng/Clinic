@@ -47,12 +47,12 @@ export interface InvoicePdfData {
 
 // Fixed clinic identity — single-doctor clinic, this never changes per invoice.
 const DOCTOR_NAME_AR = 'د. نداء بوخضور';
-const DOCTOR_TITLE_AR = 'استشاري امراض النساء والولادة والعقم';
+const DOCTOR_TITLE_AR = 'استشاري أمراض النساء والولادة والعقم';
 
 const CLINIC_NAME_AR = 'مركز العيادات التخصصية';
 const CLINIC_NAME_EN = 'Specialized Clinics Center';
 
-const CLINIC_ADDRESS_AR = 'حولي - قطعة 4 - شارع المعتصم - مركز العيادات التخصصية - الدور السادس';
+const CLINIC_ADDRESS_AR = 'حولي - قطعه 4 - شارع المعتصم- مركز العيادات التخصصية - الدور السادس';
 const CLINIC_ADDRESS_EN = "Hawally - Block 4 - Al-Mu'tasim Street - Specialized Clinics Center - 6th Floor";
 const CLINIC_PHONE_AR = 'تلفون: 22650700 داخلي 607';
 const CLINIC_PHONE_EN = 'Tel.: 22650700 Ext. 607';
@@ -234,9 +234,13 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     position: relative;
   }
   .page {
-    padding: 18px 22px 20px;
-    border: 1px solid #111844;
-    margin: 6px;
+    width: 198mm;
+    min-height: 285mm;
+    padding: 14px 18px 16px;
+    border: 1px solid #D5DEEE;
+    border-top: 5px solid #111844;
+    margin: 6mm auto;
+    background: #FFFFFF;
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -254,17 +258,15 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     z-index: 10;
   }
   .top-bar {
-    height: 4px;
-    background: #111844;
-    margin: -18px -22px 12px;
+    display: none;
   }
   .header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 8px;
-    border-bottom: 3px double #111844;
-    margin-bottom: 8px;
+    padding: 0 0 9px;
+    border-bottom: 1px solid #B9C7DE;
+    margin-bottom: 7px;
   }
   .header .logo {
     width: 58px;
@@ -285,7 +287,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   }
   .doctor-block {
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .doctor-block .doctor-name {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
@@ -307,7 +309,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     font-weight: bold;
     color: #111844;
     letter-spacing: 2px;
-    margin: 8px 0 10px;
+    margin: 6px 0 8px;
   }
   .invoice-title .arrow {
     color: #4B5694;
@@ -318,7 +320,8 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     display: flex;
     border: 1px solid #111844;
     border-radius: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
+    background: #F4F8FD;
     overflow: hidden;
   }
   .meta-box .cell {
@@ -355,10 +358,11 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     color: #111844;
   }
   .patient-box {
-    border: 1px solid #111844;
+    border: 1px solid #B9C7DE;
     border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    padding: 7px 11px;
+    margin-bottom: 7px;
+    background: #F8FBFF;
   }
   .patient-box .patient-title {
     text-align: center;
@@ -393,19 +397,19 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   table.items {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
     page-break-inside: avoid;
     break-inside: avoid;
   }
   table.items th {
     background: #111844;
     color: #FFFFFF;
-    padding: 5px 7px;
+    padding: 4px 6px;
     font-size: 9px;
     text-align: left;
   }
   table.items td {
-    padding: 5px 7px;
+    padding: 4px 6px;
     font-size: 10px;
     border-bottom: 1px solid #E5E7EF;
   }
@@ -429,13 +433,14 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   .bottom-row {
     display: flex;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
   }
   .totals-box {
     flex: 1;
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 11px;
+    background: #F8FBFF;
   }
   .totals-box .row {
     display: flex;
@@ -454,7 +459,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     flex: 1;
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 7px 8px;
+    padding: 6px 8px;
     text-align: center;
   }
   .status-box .label {
@@ -473,12 +478,13 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     font-style: italic;
     font-size: 10px;
     color: #4B5694;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .footer-box {
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 11px;
+    background: #F4F8FD;
     text-align: center;
     font-size: 8px;
     color: #4B5694;
@@ -495,7 +501,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     font-size: 13px;
     font-weight: bold;
     color: #111844;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
   .footer-box .line-ar {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
@@ -503,7 +509,11 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     margin-bottom: 1px;
   }
   .footer-box .line-en {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { margin: 0 auto; }
   }
 </style>
 </head>

@@ -9,6 +9,7 @@ import { formatDateTime } from '../utils/dateFormat';
 import { formatMoney, formatNumber, moneyToCents, normalizeMoneyInput } from '../utils/money';
 import { getReturnTo } from '../utils/listState';
 import { preserveListState } from '../utils/listState';
+import { buildWhatsAppUrl, canShareInvoiceFile, isValidWhatsAppPhone, normalizeWhatsAppPhone } from '../utils/invoiceSharing';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
@@ -201,14 +202,6 @@ export default function InvoiceDetail() {
   };
 
   const knownCountryCodes = ['965', '20', '966', '971', '974', '973', '968'];
-  const normalizePhone = (value: string, countryCode: string) => {
-    let rawPhone = value.replace(/\D/g, '');
-    if (rawPhone.startsWith('00')) rawPhone = rawPhone.slice(2);
-    if (value.trim().startsWith('+') || (countryCode && rawPhone.startsWith(countryCode))) return rawPhone;
-    if (!countryCode && knownCountryCodes.some((code) => rawPhone.startsWith(code) && rawPhone.length >= code.length + 7)) return rawPhone;
-    if (rawPhone.startsWith('0')) rawPhone = rawPhone.replace(/^0+/, '');
-    return countryCode ? `${countryCode}${rawPhone}` : rawPhone;
-  };
 
   const openMessageShareDialog = (channel: 'whatsapp' | 'telegram' | 'sms') => {
     setShareMenuOpen(false);
@@ -220,11 +213,11 @@ export default function InvoiceDetail() {
 
   const sendMessageShare = () => {
     if (!messageShareChannel || whatsappOpening || shareActionPending) return;
-    const phone = normalizePhone(messageSharePhone, messageShareCountryCode);
+    const phone = normalizeWhatsAppPhone(messageSharePhone, messageShareCountryCode);
     const hasInternationalPrefix = messageSharePhone.trim().startsWith('+')
       || messageSharePhone.trim().startsWith('00')
       || knownCountryCodes.some((code) => phone.startsWith(code) && phone.length >= code.length + 7);
-    if (messageShareChannel !== 'telegram' && ((!messageShareCountryCode && !hasInternationalPrefix) || phone.length < 8 || phone.length > 15)) {
+    if (messageShareChannel !== 'telegram' && ((!messageShareCountryCode && !hasInternationalPrefix) || !isValidWhatsAppPhone(phone))) {
       showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
       return;
     }
@@ -245,7 +238,7 @@ export default function InvoiceDetail() {
           share?: (data?: globalThis.ShareData) => Promise<void>;
           canShare?: (data?: globalThis.ShareData) => boolean;
         };
-        if (shareNavigator.share && shareNavigator.canShare?.(shareData)) {
+        if (shareNavigator.share && canShareInvoiceFile(file)) {
           await shareNavigator.share(shareData);
           setMessageShareChannel(null);
           showToast({ type: 'success', message: t('invoices.invoiceShared') });
@@ -297,6 +290,62 @@ export default function InvoiceDetail() {
   };
 
   const shareInvoiceOnWhatsApp = () => {
+    const phone = invoice?.patient.phone ? normalizeWhatsAppPhone(invoice.patient.phone) : '';
+    if (invoice && isValidWhatsAppPhone(phone)) {
+      setShareMenuOpen(false);
+      setShareActionPending(true);
+      setWhatsappOpening(true);
+      const fallbackWindow = window.open('', '_blank', 'noopener,noreferrer');
+
+      void (async () => {
+        try {
+          const message = buildShareMessage();
+          const language = i18n.language.startsWith('ar') ? 'ar' : 'en';
+          const file = await invoicesService.getPdfFile(id!, language, invoice.invoiceNumber);
+          const shareData = { files: [file], text: message, title: t('invoices.shareInvoiceTitle') };
+          const shareNavigator = navigator as globalThis.Navigator & {
+            share?: (data?: globalThis.ShareData) => Promise<void>;
+          };
+
+          if (shareNavigator.share && canShareInvoiceFile(file)) {
+            await shareNavigator.share(shareData);
+            fallbackWindow?.close();
+            showToast({ type: 'success', message: t('invoices.invoiceShared') });
+            return;
+          }
+
+          const downloadUrl = window.URL.createObjectURL(file);
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.href = downloadUrl;
+          downloadAnchor.download = file.name;
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+          window.setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 60_000);
+
+          const whatsappUrl = buildWhatsAppUrl(phone, message);
+          if (fallbackWindow) {
+            fallbackWindow.location.replace(whatsappUrl);
+            setMessageShareChannel(null);
+            showToast({ type: 'info', message: t('invoices.pdfDownloadedAttachManually') });
+          } else {
+            showToast({ type: 'error', message: t('invoices.popupBlocked') });
+          }
+        } catch (error) {
+          fallbackWindow?.close();
+          if (error instanceof globalThis.DOMException && error.name === 'AbortError') {
+            showToast({ type: 'info', message: t('invoices.shareCancelled') });
+          } else {
+            showToast({ type: 'error', message: error instanceof Error ? error.message : t('invoices.pdfShareFailed') });
+          }
+        } finally {
+          setShareActionPending(false);
+          setWhatsappOpening(false);
+        }
+      })();
+      return;
+    }
+
     openMessageShareDialog('whatsapp');
   };
 
