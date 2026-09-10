@@ -1,4 +1,6 @@
-# Clinic Management & Billing System
+# Specialized-Clinics-Center
+
+Clinic Management & Billing System
 
 A web-based administrative system for the Specialized Clinics Center in Kuwait. The system manages patient information, clinic visits, appointments, billing, payments, invoices, and provides operational overview.
 
