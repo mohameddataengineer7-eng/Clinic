@@ -15,6 +15,16 @@ import { AuthThrottlerGuard } from './guards/auth-throttler.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  private getRefreshCookieOptions(maxAge: number) {
+    const secure = process.env.NODE_ENV === 'production' || process.env.FRONTEND_URL?.startsWith('https://') === true;
+    return {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? ('none' as const) : ('lax' as const),
+      maxAge,
+    };
+  }
+
   @Post('login')
   @UseGuards(AuthThrottlerGuard)
   @HttpCode(HttpStatus.OK)
@@ -25,14 +35,11 @@ export class AuthController {
     
     const result = await this.authService.login(loginDto, ipAddress, userAgent, rememberMe);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000, // 30 days or 7 days
-    };
-
-    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    res.cookie(
+      'refreshToken',
+      result.refreshToken,
+      this.getRefreshCookieOptions(rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000),
+    );
 
     return {
       accessToken: result.accessToken,
@@ -62,14 +69,7 @@ export class AuthController {
 
     const result = await this.authService.refreshTokens(refreshToken, ipAddress, userAgent);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    };
-
-    res.cookie('refreshToken', result.refreshToken, cookieOptions);
+    res.cookie('refreshToken', result.refreshToken, this.getRefreshCookieOptions(7 * 24 * 60 * 60 * 1000));
 
     return { 
       accessToken: result.accessToken,
