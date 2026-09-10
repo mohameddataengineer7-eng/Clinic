@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { VisitType, VisitStatus } from '@prisma/client';
@@ -246,6 +246,44 @@ export class VisitsService {
     }
 
     return visit;
+  }
+
+  async hardDelete(id: string, userId: string, ipAddress?: string, userAgent?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const visit = await tx.visit.findUnique({
+        where: { id },
+        include: { invoices: { select: { invoiceNumber: true } } },
+      });
+      if (!visit) throw new NotFoundException('Visit not found');
+      if (visit.invoices.length) {
+        throw new ConflictException(
+          `Visit cannot be permanently deleted because it is linked to invoice(s): ${visit.invoices.map((invoice) => invoice.invoiceNumber).join(', ')}. Use the existing invoice void/replacement workflow.`,
+        );
+      }
+      if (visit.status === VisitStatus.COMPLETED || visit.status === VisitStatus.IN_PROGRESS) {
+        throw new ConflictException('Completed or in-progress visits cannot be permanently deleted because they are medical history.');
+      }
+
+      await tx.visit.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'DELETE_PERMANENT',
+          entityType: 'Visit',
+          entityId: id,
+          beforeState: JSON.stringify({
+            patientId: visit.patientId,
+            appointmentId: visit.appointmentId,
+            type: visit.type,
+            status: visit.status,
+            visitDate: visit.visitDate,
+          }),
+          ipAddress,
+          userAgent,
+        },
+      });
+      return { id, deleted: true };
+    });
   }
 
   async update(id: string, updateVisitDto: UpdateVisitDto, userId: string, ipAddress?: string, userAgent?: string) {

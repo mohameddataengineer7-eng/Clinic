@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, User, Phone, IdCard, Calendar, Stethoscope, FileText, ReceiptText } from 'lucide-react';
 import { visitsService, VisitStatus } from '../services/visits.service';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +10,8 @@ import { getReturnTo } from '../utils/listState';
 import { preserveListState } from '../utils/listState';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useToast } from '../contexts/ToastContext';
 
 export default function VisitDetail() {
   const { t, i18n } = useTranslation();
@@ -16,6 +19,9 @@ export default function VisitDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = getReturnTo(searchParams.toString(), '/visits');
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const STATUS_LABELS: Record<VisitStatus, string> = {
     SCHEDULED: t('visits.statusScheduled'),
@@ -38,6 +44,16 @@ export default function VisitDetail() {
     queryKey: ['visit', id],
     queryFn: () => visitsService.getVisit(id!),
     enabled: !!id,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => visitsService.deleteVisitPermanently(id!),
+    onSuccess: () => {
+      setShowDeleteDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['visits'] });
+      showToast({ type: 'success', message: t('feedback.visitDeleted') });
+      navigate(returnTo);
+    },
+    onError: (deleteError: Error) => showToast({ type: 'error', message: deleteError.message }),
   });
 
   const invoices = visit?.invoices ?? [];
@@ -72,7 +88,18 @@ export default function VisitDetail() {
         title={t('visits.detailsTitle')}
         subtitle={formatDateTime(visit.visitDate, i18n.language)}
         breadcrumbs={[{ label: t('sidebar.visits'), href: returnTo }, { label: t('visits.detailsTitle') }]}
-        actions={<span className="ui-badge" style={{ background: 'rgba(23,59,120,0.1)', color: 'var(--brand-blue)' }}>{STATUS_LABELS[visit.status]}</span>}
+        actions={<div className="flex flex-wrap items-center gap-2"><span className="ui-badge" style={{ background: 'rgba(23,59,120,0.1)', color: 'var(--brand-blue)' }}>{STATUS_LABELS[visit.status]}</span><button onClick={() => setShowDeleteDialog(true)} className="btn-danger-outline px-3 py-1.5 text-sm">{t('visits.deletePermanently')}</button></div>}
+      />
+      <ConfirmDialog
+        open={showDeleteDialog}
+        title={t('visits.deletePermanently')}
+        message={t('visits.deleteVisitWarning')}
+        confirmLabel={deleteMutation.isPending ? t('common.loading') : t('common.confirm')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setShowDeleteDialog(false)}
       />
 
       <div className="grid md:grid-cols-2 gap-5 mb-5">

@@ -31,6 +31,7 @@ export default function PatientProfile() {
   const patientsListReturnTo = getReturnTo(searchParams.toString(), '/patients');
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const archiveMutation = useMutation({
     mutationFn: () => patientsService.archivePatient(id!),
     onSuccess: () => {
@@ -41,6 +42,18 @@ export default function PatientProfile() {
     },
     onError: (archiveError: Error) => {
       showToast({ type: 'error', message: archiveError.message || t('feedback.patientArchiveFailed') });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => patientsService.deletePatientPermanently(id!),
+    onSuccess: () => {
+      setShowDeleteDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      showToast({ type: 'success', message: t('feedback.patientDeleted') });
+      navigate(patientsListReturnTo);
+    },
+    onError: (deleteError: Error) => {
+      showToast({ type: 'error', message: deleteError.message });
     },
   });
 
@@ -217,6 +230,11 @@ export default function PatientProfile() {
                   {t('patients.archivedNotice')}
                 </div>
               )}
+              {(user?.role === 'ADMIN' || user?.role === 'RECEPTIONIST') && (
+                <button type="button" onClick={() => setShowDeleteDialog(true)} className="mt-3 w-full rounded-md border border-red-300 bg-red-50 py-2 text-red-700 transition-colors hover:bg-red-100">
+                  {t('patients.deletePermanently')}
+                </button>
+              )}
             </div>
             <ConfirmDialog
               open={showArchiveDialog}
@@ -228,6 +246,17 @@ export default function PatientProfile() {
               loading={archiveMutation.isPending}
               onConfirm={() => archiveMutation.mutate()}
               onCancel={() => setShowArchiveDialog(false)}
+            />
+            <ConfirmDialog
+              open={showDeleteDialog}
+              title={t('patients.deletePermanently')}
+              message={t('patients.deletePatientWarning', { name: patient.fullNameAr })}
+              confirmLabel={deleteMutation.isPending ? t('common.loading') : t('patients.confirmPermanentDelete')}
+              cancelLabel={t('common.cancel')}
+              destructive
+              loading={deleteMutation.isPending}
+              onConfirm={() => deleteMutation.mutate()}
+              onCancel={() => setShowDeleteDialog(false)}
             />
           </div>
 

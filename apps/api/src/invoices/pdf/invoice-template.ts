@@ -234,6 +234,8 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     position: relative;
   }
   .page {
+    display: flex;
+    flex-direction: column;
     width: 198mm;
     min-height: 285mm;
     padding: 14px 18px 16px;
@@ -267,6 +269,20 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     padding: 0 0 9px;
     border-bottom: 1px solid #B9C7DE;
     margin-bottom: 7px;
+  }
+  .header-contact {
+    margin-left: auto;
+    padding-left: 12px;
+    border-left: 1px solid #B9C7DE;
+    text-align: right;
+    font-size: 7px;
+    line-height: 1.45;
+    color: #4B5694;
+    direction: ltr;
+  }
+  .header-contact .line-ar {
+    direction: rtl;
+    font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
   }
   .header .logo {
     width: 58px;
@@ -304,12 +320,19 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     margin-top: 2px;
   }
   .invoice-title {
-    text-align: center;
+    text-align: left;
     font-size: 19px;
     font-weight: bold;
     color: #111844;
     letter-spacing: 2px;
     margin: 6px 0 8px;
+  }
+  .invoice-title::after {
+    content: '';
+    display: block;
+    width: 34px;
+    border-bottom: 3px solid #C4362B;
+    margin-top: 3px;
   }
   .invoice-title .arrow {
     color: #4B5694;
@@ -358,21 +381,31 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     color: #111844;
   }
   .patient-box {
+    display: flex;
     border: 1px solid #B9C7DE;
     border-radius: 8px;
-    padding: 7px 11px;
+    padding: 0;
     margin-bottom: 7px;
     background: #F8FBFF;
+    overflow: hidden;
   }
-  .patient-box .patient-title {
+  .patient-title {
+    display: flex;
+    align-items: center;
+    width: 106px;
+    flex: 0 0 106px;
+    padding: 8px;
+    background: #17447F;
+    color: #FFFFFF;
     text-align: center;
     font-size: 11px;
     font-weight: bold;
-    color: #111844;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #E5E7EF;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+  }
+  .patient-details {
+    flex: 1;
+    padding: 7px 11px;
   }
   .patient-grid {
     display: grid;
@@ -481,26 +514,27 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     margin-bottom: 6px;
   }
   .footer-box {
-    border: 1px solid #111844;
-    border-radius: 8px;
-    padding: 7px 11px;
-    background: #F4F8FD;
+    margin-top: auto;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 8px 11px 7px;
+    background: #17447F;
     text-align: center;
     font-size: 8px;
-    color: #4B5694;
+    color: #FFFFFF;
   }
   .footer-box .clinic-name-ar {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
     direction: rtl;
     font-size: 14px;
     font-weight: bold;
-    color: #111844;
+    color: #FFFFFF;
     margin-bottom: 2px;
   }
   .footer-box .clinic-name-en {
     font-size: 13px;
     font-weight: bold;
-    color: #111844;
+    color: #FFFFFF;
     margin-bottom: 5px;
   }
   .footer-box .line-ar {
@@ -527,6 +561,12 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
       <div>
         <div class="clinic-name-ar">${CLINIC_NAME_AR}</div>
         <div class="clinic-name-en">${CLINIC_NAME_EN}</div>
+      </div>
+      <div class="header-contact">
+        <div class="line-ar">${CLINIC_ADDRESS_AR}</div>
+        <div>${CLINIC_ADDRESS_EN}</div>
+        <div class="line-ar">${CLINIC_PHONE_AR}</div>
+        <div>${CLINIC_PHONE_EN}</div>
       </div>
     </div>
 
@@ -556,30 +596,32 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
 
     <div class="patient-box">
       <div class="patient-title">${labels.patientInfo}</div>
-      <div class="patient-grid">
-        <div class="field">
-          <div class="label">${labels.patientName}</div>
-          <div class="value ar">${escapeHtml(invoice.patient.fullNameAr)}</div>
-        </div>
-        <div class="field">
-          <div class="label">${labels.visitType}</div>
-          <div class="value">${visitTypeLabel}</div>
-        </div>
-        <div class="field">
-          <div class="label">${labels.civilId}</div>
-          <div class="value">${invoice.patient.civilId ? escapeHtml(invoice.patient.civilId) : '&mdash;'}</div>
-        </div>
-        <div class="field">
-          <div class="label">${labels.diagnosis}</div>
-          <div class="value ar">${diagnosis}</div>
-        </div>
-        <div class="field">
-          <div class="label">${labels.mobile}</div>
-          <div class="value">${invoice.patient.phone ? escapeHtml(invoice.patient.phone) : '&mdash;'}</div>
-        </div>
-        <div class="field">
-          <div class="label">${labels.doctor}</div>
-          <div class="value ar">${DOCTOR_NAME_AR}</div>
+      <div class="patient-details">
+        <div class="patient-grid">
+          <div class="field">
+            <div class="label">${labels.patientName}</div>
+            <div class="value ar">${escapeHtml(invoice.patient.fullNameAr)}</div>
+          </div>
+          <div class="field">
+            <div class="label">${labels.visitType}</div>
+            <div class="value">${visitTypeLabel}</div>
+          </div>
+          <div class="field">
+            <div class="label">${labels.civilId}</div>
+            <div class="value">${invoice.patient.civilId ? escapeHtml(invoice.patient.civilId) : '&mdash;'}</div>
+          </div>
+          <div class="field">
+            <div class="label">${labels.diagnosis}</div>
+            <div class="value ar">${diagnosis}</div>
+          </div>
+          <div class="field">
+            <div class="label">${labels.mobile}</div>
+            <div class="value">${invoice.patient.phone ? escapeHtml(invoice.patient.phone) : '&mdash;'}</div>
+          </div>
+          <div class="field">
+            <div class="label">${labels.doctor}</div>
+            <div class="value ar">${DOCTOR_NAME_AR}</div>
+          </div>
         </div>
       </div>
     </div>

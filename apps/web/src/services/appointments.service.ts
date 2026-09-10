@@ -156,6 +156,18 @@ class AppointmentsService {
 
     return response.json();
   }
+
+  async deleteAppointmentPermanently(id: string): Promise<{ id: string; deleted: boolean }> {
+    const response = await fetch(`${apiBaseUrl}/appointments/${id}/permanent`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete appointment');
+    }
+    return response.json();
+  }
 }
 
 export const appointmentsService = new AppointmentsService();

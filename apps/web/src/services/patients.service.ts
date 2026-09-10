@@ -150,6 +150,18 @@ class PatientsService {
 
     return response.json();
   }
+
+  async deletePatientPermanently(id: string): Promise<{ id: string; deleted: boolean }> {
+    const response = await fetch(`${apiBaseUrl}/patients/${id}/permanent`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete patient');
+    }
+    return response.json();
+  }
 }
 
 export const patientsService = new PatientsService();

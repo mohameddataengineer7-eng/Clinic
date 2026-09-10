@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, ParseUUIDPipe, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, ParseUUIDPipe, Request, Delete } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -65,5 +65,13 @@ export class ServicesController {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.servicesService.updateStatus(id, updateStatusDto, req.user.id, ipAddress, userAgent);
+  }
+
+  @Delete(':id/permanent')
+  @Roles(UserRole.ADMIN, UserRole.RECEPTIONIST)
+  hardDelete(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.servicesService.hardDelete(id, req.user.id, ipAddress, userAgent);
   }
 }

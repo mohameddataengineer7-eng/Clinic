@@ -191,4 +191,38 @@ export class ServicesService {
 
     return updated;
   }
+
+  async hardDelete(id: string, userId: string, ipAddress?: string, userAgent?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const service = await tx.service.findUnique({
+        where: { id },
+        include: { _count: { select: { invoiceItems: true } } },
+      });
+      if (!service) throw new NotFoundException('Service not found');
+      if (service._count.invoiceItems) {
+        throw new ConflictException(
+          `Service cannot be permanently deleted because it is referenced by ${service._count.invoiceItems} invoice item(s). Deactivate it instead to preserve invoice history.`,
+        );
+      }
+
+      await tx.service.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'DELETE_PERMANENT',
+          entityType: 'Service',
+          entityId: id,
+          beforeState: JSON.stringify({
+            name: service.name,
+            code: service.code,
+            currentPrice: service.currentPrice,
+            isActive: service.isActive,
+          }),
+          ipAddress,
+          userAgent,
+        },
+      });
+      return { id, deleted: true };
+    });
+  }
 }

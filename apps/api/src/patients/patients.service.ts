@@ -245,4 +245,46 @@ export class PatientsService {
 
     return restoredPatient;
   }
+
+  async hardDelete(id: string, userId: string, ipAddress?: string, userAgent?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const patient = await tx.patient.findUnique({
+        where: { id },
+        include: {
+          _count: { select: { appointments: true, visits: true, invoices: true } },
+        },
+      });
+      if (!patient) throw new NotFoundException('Patient not found');
+
+      const dependencies = [
+        patient._count.appointments ? `${patient._count.appointments} appointment(s)` : '',
+        patient._count.visits ? `${patient._count.visits} visit(s)` : '',
+        patient._count.invoices ? `${patient._count.invoices} invoice(s)` : '',
+      ].filter(Boolean);
+      if (dependencies.length) {
+        throw new ConflictException(
+          `Patient cannot be permanently deleted because it has protected history: ${dependencies.join(', ')}. Archive the patient instead.`,
+        );
+      }
+
+      await tx.patient.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'DELETE_PERMANENT',
+          entityType: 'Patient',
+          entityId: id,
+          beforeState: JSON.stringify({
+            civilId: patient.civilId,
+            fullNameAr: patient.fullNameAr,
+            fullNameEn: patient.fullNameEn,
+            isArchived: patient.isArchived,
+          }),
+          ipAddress,
+          userAgent,
+        },
+      });
+      return { id, deleted: true };
+    });
+  }
 }

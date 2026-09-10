@@ -181,6 +181,18 @@ class VisitsService {
     return response.json();
   }
 
+  async deleteVisitPermanently(id: string): Promise<{ id: string; deleted: boolean }> {
+    const response = await fetch(`${apiBaseUrl}/visits/${id}/permanent`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete visit');
+    }
+    return response.json();
+  }
+
   async updateVisitStatus(id: string, status: VisitStatus): Promise<Visit> {
     const response = await fetch(`${apiBaseUrl}/visits/${id}/status`, {
       method: 'PATCH',

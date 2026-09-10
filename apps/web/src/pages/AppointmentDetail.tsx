@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
 import ModalDialog from '../components/ModalDialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { formatDateTime as formatLocalizedDateTime } from '../utils/dateFormat';
 
 export default function AppointmentDetail() {
@@ -21,6 +22,7 @@ export default function AppointmentDetail() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelReasonType, setCancelReasonType] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: appointment, isLoading, error } = useQuery({
     queryKey: ['appointment', id],
@@ -55,6 +57,16 @@ export default function AppointmentDetail() {
     onError: (error: Error) => {
       showToast({ type: 'error', message: error.message || t('feedback.appointmentCancelFailed') });
     },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => appointmentsService.deleteAppointmentPermanently(id!),
+    onSuccess: () => {
+      setShowDeleteDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      showToast({ type: 'success', message: t('feedback.appointmentDeleted') });
+      navigate(returnTo);
+    },
+    onError: (deleteError: Error) => showToast({ type: 'error', message: deleteError.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -125,9 +137,23 @@ export default function AppointmentDetail() {
               <button onClick={() => navigate(`/appointments/${appointment.id}/edit?returnTo=${encodeURIComponent(returnTo)}`)} className="btn-primary px-4 py-2">
                 {t('common.edit')}
               </button>
+              <button onClick={() => setShowDeleteDialog(true)} className="btn-danger-outline px-4 py-2">
+                {t('appointments.deletePermanently')}
+              </button>
               <button onClick={() => navigate(returnTo)} className="rounded-md bg-gray-200 px-4 py-2 text-gray-700">{t('common.back')}</button>
             </div>
           }
+        />
+        <ConfirmDialog
+          open={showDeleteDialog}
+          title={t('appointments.deletePermanently')}
+          message={t('appointments.deleteAppointmentWarning')}
+          confirmLabel={deleteMutation.isPending ? t('common.loading') : t('common.confirm')}
+          cancelLabel={t('common.cancel')}
+          destructive
+          loading={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate()}
+          onCancel={() => setShowDeleteDialog(false)}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

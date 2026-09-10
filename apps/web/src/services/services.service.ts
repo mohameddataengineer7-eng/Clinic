@@ -146,6 +146,18 @@ class ServicesService {
     return response.json();
   }
 
+  async deleteServicePermanently(id: string): Promise<{ id: string; deleted: boolean }> {
+    const response = await fetch(`${apiBaseUrl}/services/${id}/permanent`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete service');
+    }
+    return response.json();
+  }
+
   async getActiveServices(page: number = 1, limit: number = 100): Promise<ServicesListResponse> {
     return this.getServices(undefined, true, page, limit);
   }

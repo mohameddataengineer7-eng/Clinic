@@ -22,6 +22,7 @@ export default function ServicesList() {
   const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [confirmDeactivate, setConfirmDeactivate] = useState<Service | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Service | null>(null);
   const limit = 20;
 
   const isAdmin = user?.role === 'ADMIN';
@@ -43,6 +44,17 @@ export default function ServicesList() {
       showToast({ type: 'success', message: service.isActive ? t('feedback.serviceDeactivated') : t('feedback.serviceActivated') });
     } catch (err) {
       console.error('Failed to update service status:', err);
+      showToast({ type: 'error', message: err instanceof Error ? err.message : t('feedback.serviceStatusFailed') });
+    }
+  };
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      await servicesService.deleteServicePermanently(confirmDelete.id);
+      setConfirmDelete(null);
+      refetch();
+      showToast({ type: 'success', message: t('feedback.serviceDeleted') });
+    } catch (err) {
       showToast({ type: 'error', message: err instanceof Error ? err.message : t('feedback.serviceStatusFailed') });
     }
   };
@@ -116,10 +128,11 @@ export default function ServicesList() {
                 <MobileRecordField label={t('services.code')} value={service.code || '—'} />
                 <MobileRecordField label={t('services.price')} value={`${formatMoney(service.currentPrice, i18n.language)} ${t('common.currency')}`} />
                 <MobileRecordField label={t('services.updatedAt')} value={formatDate(service.updatedAt, i18n.language)} />
-                {isAdmin && (
+                {(isAdmin || user?.role === 'RECEPTIONIST') && (
                   <div className="flex gap-1 pt-1">
-                    <button onClick={() => navigate(`/services/${service.id}/edit`)} aria-label={t('services.editService')} className="icon-btn"><Pencil size={16} strokeWidth={1.75} /></button>
-                    <button onClick={() => setConfirmDeactivate(service)} aria-label={service.isActive ? t('services.deactivateService') : t('services.activateService')} className="icon-btn danger"><Trash2 size={16} strokeWidth={1.75} /></button>
+                    {isAdmin && <button onClick={() => navigate(`/services/${service.id}/edit`)} aria-label={t('services.editService')} className="icon-btn"><Pencil size={16} strokeWidth={1.75} /></button>}
+                    {isAdmin && <button onClick={() => setConfirmDeactivate(service)} aria-label={service.isActive ? t('services.deactivateService') : t('services.activateService')} className="icon-btn danger"><Trash2 size={16} strokeWidth={1.75} /></button>}
+                    <button onClick={() => setConfirmDelete(service)} aria-label={t('services.deletePermanently')} className="icon-btn danger"><Trash2 size={16} strokeWidth={1.75} /></button>
                   </div>
                 )}
               </MobileRecordCard>
@@ -159,23 +172,24 @@ export default function ServicesList() {
                     </span>
                   </td>
                   <td className="text-[#64748B]">{formatDate(service.updatedAt, i18n.language)}</td>
-                  {isAdmin && (
+                  {(isAdmin || user?.role === 'RECEPTIONIST') && (
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <button
+                        {isAdmin && <button
                           onClick={() => navigate(`/services/${service.id}/edit`)}
                           aria-label={t('services.editService')}
                           className="icon-btn"
                         >
                           <Pencil size={16} strokeWidth={1.75} />
-                        </button>
-                        <button
+                        </button>}
+                        {isAdmin && <button
                           onClick={() => setConfirmDeactivate(service)}
                           aria-label={service.isActive ? t('services.deactivateService') : t('services.activateService')}
                           className="icon-btn danger"
                         >
                           <Trash2 size={16} strokeWidth={1.75} />
-                        </button>
+                        </button>}
+                        <button onClick={() => setConfirmDelete(service)} aria-label={t('services.deletePermanently')} className="icon-btn danger"><Trash2 size={16} strokeWidth={1.75} /></button>
                       </div>
                     </td>
                   )}
@@ -232,6 +246,16 @@ export default function ServicesList() {
         destructive={!!confirmDeactivate?.isActive}
         onCancel={() => setConfirmDeactivate(null)}
         onConfirm={() => confirmDeactivate && handleToggleStatus(confirmDeactivate)}
+      />
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={t('services.deletePermanently')}
+        message={t('services.deleteServiceWarning', { name: confirmDelete?.name || '' })}
+        confirmLabel={t('common.confirm')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setConfirmDelete(null)}
       />
     </div>
   );

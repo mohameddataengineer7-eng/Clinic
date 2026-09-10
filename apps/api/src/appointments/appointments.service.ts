@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AppointmentStatus } from '@prisma/client';
@@ -250,6 +250,40 @@ export class AppointmentsService {
     );
 
     return updated;
+  }
+
+  async hardDelete(id: string, userId: string, ipAddress?: string, userAgent?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findUnique({
+        where: { id },
+        include: { visit: { select: { id: true } } },
+      });
+      if (!appointment) throw new NotFoundException('Appointment not found');
+      if (appointment.visit) {
+        throw new ConflictException(
+          'Appointment cannot be permanently deleted because it is linked to a visit. Preserve the appointment and visit history.',
+        );
+      }
+
+      await tx.appointment.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'DELETE_PERMANENT',
+          entityType: 'Appointment',
+          entityId: id,
+          beforeState: JSON.stringify({
+            patientId: appointment.patientId,
+            scheduledAt: appointment.scheduledAt,
+            status: appointment.status,
+            notes: appointment.notes,
+          }),
+          ipAddress,
+          userAgent,
+        },
+      });
+      return { id, deleted: true };
+    });
   }
 
   async cancel(id: string, cancelDto: CancelAppointmentDto, userId: string, ipAddress?: string, userAgent?: string) {
