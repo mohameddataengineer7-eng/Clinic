@@ -236,12 +236,9 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   .page {
     display: flex;
     flex-direction: column;
-    width: 198mm;
-    min-height: 285mm;
-    padding: 14px 18px 16px;
-    border: 1px solid #D5DEEE;
-    border-top: 5px solid #111844;
-    margin: 6mm auto;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 12mm 14mm 0;
     background: #FFFFFF;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -266,18 +263,20 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 0 9px;
-    border-bottom: 1px solid #B9C7DE;
-    margin-bottom: 7px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #102F63;
+    margin-bottom: 8px;
+    color: #FFFFFF;
   }
   .header-contact {
-    margin-left: auto;
-    padding-left: 12px;
-    border-left: 1px solid #B9C7DE;
+    margin-inline-start: auto;
+    padding-inline-start: 12px;
+    border-inline-start: 1px solid rgba(255,255,255,.35);
     text-align: right;
     font-size: 7px;
     line-height: 1.45;
-    color: #4B5694;
+    color: #FFFFFF;
     direction: ltr;
   }
   .header-contact .line-ar {
@@ -293,17 +292,18 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
     font-size: 18px;
     font-weight: bold;
-    color: #111844;
+    color: #FFFFFF;
     direction: rtl;
   }
   .header .clinic-name-en {
     font-size: 17px;
     font-weight: bold;
-    color: #111844;
+    color: #FFFFFF;
   }
   .doctor-block {
-    text-align: center;
-    margin-bottom: 6px;
+    text-align: right;
+    margin: 2px 0 8px;
+    padding: 0 4px;
   }
   .doctor-block .doctor-name {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
@@ -320,19 +320,19 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     margin-top: 2px;
   }
   .invoice-title {
-    text-align: left;
-    font-size: 19px;
+    text-align: center;
+    font-size: 20px;
     font-weight: bold;
     color: #111844;
     letter-spacing: 2px;
-    margin: 6px 0 8px;
+    margin: 8px 0 10px;
   }
   .invoice-title::after {
     content: '';
     display: block;
     width: 34px;
     border-bottom: 3px solid #C4362B;
-    margin-top: 3px;
+    margin: 4px auto 0;
   }
   .invoice-title .arrow {
     color: #4B5694;

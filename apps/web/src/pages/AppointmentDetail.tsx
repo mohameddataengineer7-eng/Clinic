@@ -5,6 +5,8 @@ import { appointmentsService, UpdateStatusDto, CancelAppointmentDto } from '../s
 import { useTranslation } from 'react-i18next';
 import { getReturnTo, preserveListState } from '../utils/listState';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
+import { ApiError } from '../services/api-error';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
 import ModalDialog from '../components/ModalDialog';
@@ -18,6 +20,7 @@ export default function AppointmentDetail() {
   const [searchParams] = useSearchParams();
   const returnTo = getReturnTo(searchParams.toString(), '/appointments');
   const { showToast } = useToast();
+  const { refreshAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -59,7 +62,17 @@ export default function AppointmentDetail() {
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: () => appointmentsService.deleteAppointmentPermanently(id!),
+    mutationFn: async () => {
+      try {
+        return await appointmentsService.deleteAppointmentPermanently(id!);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          await refreshAccessToken();
+          return appointmentsService.deleteAppointmentPermanently(id!);
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       setShowDeleteDialog(false);
       queryClient.invalidateQueries({ queryKey: ['appointments'] });

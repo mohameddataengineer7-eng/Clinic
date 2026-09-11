@@ -12,6 +12,8 @@ import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
+import { ApiError } from '../services/api-error';
 
 export default function VisitDetail() {
   const { t, i18n } = useTranslation();
@@ -21,6 +23,7 @@ export default function VisitDetail() {
   const returnTo = getReturnTo(searchParams.toString(), '/visits');
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { refreshAccessToken } = useAuth();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const STATUS_LABELS: Record<VisitStatus, string> = {
@@ -46,7 +49,17 @@ export default function VisitDetail() {
     enabled: !!id,
   });
   const deleteMutation = useMutation({
-    mutationFn: () => visitsService.deleteVisitPermanently(id!),
+    mutationFn: async () => {
+      try {
+        return await visitsService.deleteVisitPermanently(id!);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          await refreshAccessToken();
+          return visitsService.deleteVisitPermanently(id!);
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       setShowDeleteDialog(false);
       queryClient.invalidateQueries({ queryKey: ['visits'] });

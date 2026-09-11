@@ -1,5 +1,6 @@
 import { apiBaseUrl } from '../config/api';
 import { getAccessToken } from '../config/auth-token';
+import { ApiError } from './api-error';
 
 export type VisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
@@ -188,7 +189,7 @@ class VisitsService {
     });
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete visit');
+      throw new ApiError(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete visit', response.status);
     }
     return response.json();
   }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { patientsService } from '../services/patients.service';
+import { ApiError } from '../services/api-error';
 import { visitsService } from '../services/visits.service';
 import { invoicesService } from '../services/invoices.service';
 import { appointmentsService } from '../services/appointments.service';
@@ -24,7 +25,7 @@ export default function PatientProfile() {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshAccessToken } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -45,7 +46,19 @@ export default function PatientProfile() {
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: () => patientsService.deletePatientPermanently(id!),
+    mutationFn: async () => {
+      try {
+        return await patientsService.deletePatientPermanently(id!);
+      } catch (error) {
+        // A tab can retain an access token invalidated by a refresh in another
+        // tab. Recover once through the HttpOnly refresh cookie, then retry.
+        if (error instanceof ApiError && error.status === 401) {
+          await refreshAccessToken();
+          return patientsService.deletePatientPermanently(id!);
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       setShowDeleteDialog(false);
       queryClient.invalidateQueries({ queryKey: ['patients'] });

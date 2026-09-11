@@ -1,5 +1,6 @@
 import { apiBaseUrl } from '../config/api';
 import { getAccessToken } from '../config/auth-token';
+import { ApiError } from './api-error';
 
 export interface Patient {
   id: string;
@@ -157,8 +158,11 @@ class PatientsService {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete patient');
+      const error = await response.json().catch(() => ({ message: response.statusText }));
+      throw new ApiError(
+        Array.isArray(error.message) ? error.message.join(', ') : error.message || 'Failed to permanently delete patient',
+        response.status,
+      );
     }
     return response.json();
   }
